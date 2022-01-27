@@ -31,9 +31,9 @@ if [ $# -lt 1 ]; then
     exit -1
 fi
 
-ROCKETMQ_VERSION=$1
+VERSION=$1
 
-checkVersion $ROCKETMQ_VERSION
+checkVersion $VERSION
 
-docker build --no-cache -f Dockerfile -t martindai/rocketmq:${ROCKETMQ_VERSION} --build-arg version=${ROCKETMQ_VERSION} .
+docker build --no-cache -f Dockerfile -t martindai/rocketmq:${VERSION} --build-arg version=${VERSION} .
 
