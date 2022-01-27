@@ -16,7 +16,7 @@
 # limitations under the License.
 ###############################################################################
 
-FROM arm64v8/openjdk:8-jre-buster
+FROM openjdk:8-jre-buster
 
 # Install dependencies
 RUN set -ex; \
