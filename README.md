@@ -1,3 +1,3 @@
 # docker-build-file
 
-包含适用于Apple M1（arm64）版本的组件镜像构建所需的Dockerfile
+自己用到过的一些组件镜像但是没有合适的版本（适用于特定系统架构的版本，如arm64），所以整理出来

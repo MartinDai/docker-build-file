@@ -17,7 +17,7 @@ FROM maven:3.8.4-jdk-8-slim as builder
 RUN apt-get update && \
     apt-get install -y wget unzip
 
-ARG version=0.4.0
+ARG version
 RUN mkdir /source && \
     wget https://github.com/apache/dubbo-admin/archive/${version}.zip && \
     unzip -q ${version}.zip -d /source && \
@@ -25,12 +25,13 @@ RUN mkdir /source && \
 
 WORKDIR /source/dubbo-admin
 COPY ./settings-docker.xml /usr/share/maven/ref/
-RUN mvn --batch-mode clean package -DskipTests=true -s /usr/share/maven/ref/settings-docker.xml dependency:resolve
+RUN mvn --batch-mode clean package -DskipTests -s /usr/share/maven/ref/settings-docker.xml dependency:resolve
+WORKDIR /source/dubbo-admin/dubbo-admin-distribution/target
+RUN mv ./dubbo-admin-${version}.jar ./app.jar
 
-FROM openjdk:8-jre-slim-buster
-LABEL maintainer="dev@dubbo.apache.org"
-RUN apt-get update && apt-get install -y tini
-COPY --from=builder /source/dubbo-admin/dubbo-admin-distribution/target/dubbo-admin-0.4.0.jar /app.jar
+FROM openjdk:8-alpine
+RUN apk add --no-cache tini bash
+COPY --from=builder /source/dubbo-admin/dubbo-admin-distribution/target/app.jar /app.jar
 COPY --from=builder /source/dubbo-admin/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 ENV JAVA_OPTS ""
