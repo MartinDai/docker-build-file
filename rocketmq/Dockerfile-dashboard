@@ -1,0 +1,72 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+FROM openjdk:8-jdk as builder
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  bash libapr1 unzip telnet wget gnupg ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+ARG version
+
+# install maven 3.6.3
+ARG MAVEN_VERSION=3.6.3
+ARG MAVEN_DOWNLOAD_URL=https://dlcdn.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz
+
+RUN mkdir -p /usr/share/maven /usr/share/maven/ref && \
+    wget -O /tmp/apache-maven.tar.gz ${MAVEN_DOWNLOAD_URL} --no-check-certificate && \
+    tar -xzf /tmp/apache-maven.tar.gz -C /usr/share/maven --strip-components=1 && \
+    rm -f /tmp/apache-maven.tar.gz && \
+    ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
+
+### make it faster if remove those "#"s bellow
+# RUN sed -i '159i \
+#     <mirror> \
+#       <id>nexus-tencentyun</id> \
+#       <mirrorOf>*</mirrorOf> \
+#       <name>Nexus tencentyun</name> \
+#       <url>http://mirrors.cloud.tencent.com/nexus/repository/maven-public/</url> \
+#     </mirror> \
+# ' /usr/share/maven/conf/settings.xml
+
+RUN cat /usr/share/maven/conf/settings.xml
+
+WORKDIR /home/rocketmq
+
+RUN set -eux; \
+    curl -L https://dist.apache.org/repos/dist/release/rocketmq/rocketmq-dashboard/${version}/rocketmq-dashboard-${version}-source-release.zip -o rocketmq-dashboard.zip; \
+    curl -L https://dist.apache.org/repos/dist/release/rocketmq/rocketmq-dashboard/${version}/rocketmq-dashboard-${version}-source-release.zip.asc -o rocketmq-dashboard.zip.asc; \
+    wget https://www.apache.org/dist/rocketmq/KEYS --no-check-certificate; \
+    \
+    gpg --import KEYS; \
+    gpg --batch --verify rocketmq-dashboard.zip.asc rocketmq-dashboard.zip ; \
+    unzip rocketmq-dashboard.zip ;
+
+RUN cd rocketmq-dashboard-${version}; \
+    mvn -DskipTests clean install
+
+FROM openjdk:8-alpine
+
+ARG version
+
+ENV ROCKETMQ_DASHBOARD_HOME  /home/rocketmq/rocketmq-dashboard-${version}
+WORKDIR ${ROCKETMQ_DASHBOARD_HOME}
+
+RUN mkdir bin
+COPY --from=builder /home/rocketmq/rocketmq-dashboard-${version}/target/rocketmq-dashboard-${version}.jar ${ROCKETMQ_DASHBOARD_HOME}/bin/rocketmq-dashboard.jar
+
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "bin/rocketmq-dashboard.jar"]

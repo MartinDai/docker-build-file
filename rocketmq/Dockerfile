@@ -17,7 +17,7 @@
 
 FROM openjdk:8-alpine
 
-RUN apk add --no-cache bash gettext nmap-ncat openssl busybox-extras
+RUN apk update add --no-cache bash gettext nmap-ncat openssl busybox-extras
 
 ARG user=rocketmq
 ARG group=rocketmq
@@ -58,17 +58,26 @@ RUN set -eux; \
     rm -rf /var/cache/apk/* ; \
     rm -rf /tmp/*
 
+# Copy customized scripts
+COPY scripts/ ${ROCKETMQ_HOME}/bin/
+
 RUN chown -R ${uid}:${gid} ${ROCKETMQ_HOME}
 
 # Expose namesrv port
 EXPOSE 9876
 
-RUN chmod a+x ${ROCKETMQ_HOME}/bin/mqnamesrv
+# Override customized scripts for namesrv
+RUN mv ${ROCKETMQ_HOME}/bin/runserver-customize.sh ${ROCKETMQ_HOME}/bin/runserver.sh \
+ && chmod a+x ${ROCKETMQ_HOME}/bin/runserver.sh \
+ && chmod a+x ${ROCKETMQ_HOME}/bin/mqnamesrv
 
 # Expose broker ports
 EXPOSE 10909 10911 10912
 
-RUN chmod a+x ${ROCKETMQ_HOME}/bin/mqbroker
+# Override customized scripts for broker
+RUN mv ${ROCKETMQ_HOME}/bin/runbroker-customize.sh ${ROCKETMQ_HOME}/bin/runbroker.sh \
+ && chmod a+x ${ROCKETMQ_HOME}/bin/runbroker.sh \
+ && chmod a+x ${ROCKETMQ_HOME}/bin/mqbroker
 
 # Export Java options
 RUN export JAVA_OPT=" -Duser.home=/opt"

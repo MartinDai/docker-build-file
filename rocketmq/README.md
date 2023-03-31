@@ -4,5 +4,10 @@
 
 # 构建示例
 ```
-sh build-image.sh 4.9.2
+sh build-image.sh 5.1.0
+```
+
+# 构建dashboard示例
+```
+sh build-image-dashboard.sh 1.0.0
 ```
